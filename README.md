@@ -2,6 +2,12 @@
 
 A Chrome MV3 extension that helps create scheduling replies in Gmail.
 
+## Install (Chrome)
+
+1. chrome://extensions を開く
+2. デベロッパーモードON
+3. extension/ フォルダを読み込み
+
 ## Features
 
 - Gmail Side Panel assistant
