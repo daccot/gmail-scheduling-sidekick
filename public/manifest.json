@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Gmail Scheduling Sidekick",
-  "version": "0.7.0",
-  "description": "A Gmail side panel assistant for scheduling with thread memos and confirmation detection.",
+  "version": "0.8.0",
+  "description": "A Gmail side panel assistant for scheduling with thread status detection, confirmation detection, and risk warnings.",
   "permissions": [
     "tabs",
     "storage",
