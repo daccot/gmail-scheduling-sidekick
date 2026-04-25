@@ -1,0 +1,193 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gmail Scheduling Sidekick</title>
+  <style>
+    :root{--bg:#f8fafc;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--primary:#2563eb;--danger:#dc2626}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px}
+    header{padding:14px;background:#0f172a;color:#fff}h1{font-size:17px;margin:0}.ver{font-size:11px;color:#cbd5e1;margin-top:3px}
+    main{padding:12px}section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+    h2{font-size:15px;margin:0 0 10px}label{display:block;font-weight:700;margin:8px 0 5px}
+    input,select,textarea,button{font:inherit}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff}
+    textarea{min-height:82px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    .buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}button{border:0;border-radius:10px;padding:8px 10px;background:var(--primary);color:#fff;font-weight:800;cursor:pointer}
+    button.secondary{background:#475569}button.danger{background:var(--danger)}button.light{background:#e2e8f0;color:#0f172a}
+    .result{white-space:pre-wrap;background:#f1f5f9;border:1px solid var(--line);border-radius:10px;padding:9px;min-height:48px;line-height:1.6}
+    .status{display:none;margin-top:8px;border-radius:10px;padding:8px;line-height:1.5}.status.ok{display:block;background:#ecfdf5;color:#065f46}.status.err{display:block;background:#fef2f2;color:#991b1b}
+    .small{color:var(--muted);font-size:12px;line-height:1.5}.candidate{border:1px solid var(--line);border-radius:10px;padding:8px;margin:7px 0;background:#fff}
+    .candidateTop{display:block}.candidateTitle{font-weight:800;margin-bottom:7px}.candidateActions{display:flex;gap:5px;flex-wrap:wrap}.candidateActions button{font-size:12px;padding:5px 7px}
+    .memoSaved{color:#047857;font-size:12px;display:none}.templateList{display:grid;grid-template-columns:1fr 1fr;gap:7px}.explain{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:8px;margin:8px 0;color:#1e3a8a;font-size:12px;line-height:1.55}
+  </style>
+</head>
+<body>
+  <header>
+    <h1 data-i18n="appName">Gmail Scheduling Sidekick</h1>
+    <div class="ver"><span id="version">v...</span> / <span id="locale"></span></div>
+    <div class="ver" data-i18n="subtitle"></div>
+  </header>
+
+  <main>
+    <section>
+      <h2 data-i18n="step1"></h2>
+
+      <div class="grid">
+        <div>
+          <label for="mode" data-i18n="mode"></label>
+          <select id="mode">
+            <option value="distributed" data-i18n="modeDistributed"></option>
+            <option value="continuous" data-i18n="modeContinuous"></option>
+            <option value="manual" data-i18n="modeManual"></option>
+          </select>
+        </div>
+        <div>
+          <label for="startDate" data-i18n="startDate"></label>
+          <input id="startDate" type="date">
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div>
+          <label for="duration" data-i18n="duration"></label>
+          <select id="duration">
+            <option value="30" data-i18n="duration30"></option>
+            <option value="45" data-i18n="duration45"></option>
+            <option value="60" data-i18n="duration60"></option>
+            <option value="90" data-i18n="duration90"></option>
+          </select>
+        </div>
+        <div>
+          <label for="daySpan" data-i18n="searchDays"></label>
+          <select id="daySpan">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="14">14</option>
+            <option value="21">21</option>
+          </select>
+        </div>
+        <div>
+          <label for="candidateCount" data-i18n="candidateCount"></label>
+          <select id="candidateCount">
+            <option value="3">3</option>
+            <option value="5">5</option>
+            <option value="7">7</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label for="timeBand" data-i18n="timeBand"></label>
+          <select id="timeBand">
+            <option value="all" data-i18n="allDay"></option>
+            <option value="morning" data-i18n="morning"></option>
+            <option value="afternoon" data-i18n="afternoon"></option>
+            <option value="custom" data-i18n="custom"></option>
+          </select>
+        </div>
+        <div>
+          <label for="slotPattern" data-i18n="pattern"></label>
+          <select id="slotPattern">
+            <option value="balanced" data-i18n="balanced"></option>
+            <option value="early" data-i18n="early"></option>
+            <option value="late" data-i18n="late"></option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label for="manualDate" data-i18n="manualDate"></label>
+          <input id="manualDate" type="date">
+        </div>
+        <div>
+          <label for="manualTime" data-i18n="manualTime"></label>
+          <input id="manualTime" type="time" value="10:00">
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button id="generateBtn" data-i18n="generate"></button>
+        <button id="addManualBtn" class="secondary" data-i18n="addManual"></button>
+        <button id="clearCandidatesBtn" class="danger" data-i18n="clearCandidates"></button>
+      </div>
+
+      <div id="candidateList"></div>
+
+      <div class="buttons">
+        <button id="copyCandidatesBtn" class="secondary" data-i18n="copyCandidates"></button>
+        <button id="insertCandidatesBtn" class="light" data-i18n="insertCandidates"></button>
+      </div>
+    </section>
+
+    <section>
+      <h2 data-i18n="step2"></h2>
+
+      <label for="tone" data-i18n="tone"></label>
+      <select id="tone">
+        <option value="polite" data-i18n="polite"></option>
+        <option value="casual" data-i18n="casual"></option>
+        <option value="formal" data-i18n="formal"></option>
+      </select>
+
+      <div class="templateList">
+        <button class="light templateBtn" data-template="interview" data-i18n="interview"></button>
+        <button class="light templateBtn" data-template="meeting" data-i18n="meeting"></button>
+        <button class="light templateBtn" data-template="reschedule" data-i18n="reschedule"></button>
+        <button class="light templateBtn" data-template="thanks" data-i18n="thanks"></button>
+      </div>
+
+      <div class="buttons">
+        <button id="copyTemplateBtn" class="secondary" data-i18n="copyTemplate"></button>
+        <button id="insertTemplateBtn" data-i18n="insertTemplate"></button>
+      </div>
+
+      <div id="templateResult" class="result"></div>
+    </section>
+
+    <section>
+      <h2 data-i18n="step3"></h2>
+      <div class="explain" data-i18n="holdExplain"></div>
+
+      <label for="holdTitle" data-i18n="holdTitle"></label>
+      <input id="holdTitle" type="text">
+
+      <label for="holdDetails" data-i18n="holdDetails"></label>
+      <textarea id="holdDetails"></textarea>
+
+      <label><input id="holdBusy" type="checkbox"> <span data-i18n="holdBusy"></span></label>
+
+      <div class="buttons">
+        <button id="openAllHoldsBtn" data-i18n="openAllHolds"></button>
+        <button id="copyHoldLinksBtn" class="secondary" data-i18n="copyHoldLinks"></button>
+      </div>
+    </section>
+
+    <section>
+      <h2 data-i18n="step4"></h2>
+      <textarea id="memo"></textarea>
+      <p class="small" data-i18n="memoStorage"></p>
+
+      <div class="buttons">
+        <button id="saveMemoBtn" class="secondary" data-i18n="saveMemo"></button>
+        <button id="clearMemoBtn" class="danger" data-i18n="clearMemo"></button>
+      </div>
+      <div id="memoSaved" class="memoSaved" data-i18n="saved"></div>
+    </section>
+
+    <section>
+      <h2 data-i18n="tools"></h2>
+      <div class="buttons">
+        <button id="openCalendarBtn" data-i18n="openCalendar"></button>
+        <button id="getContextBtn" class="secondary" data-i18n="checkGmail"></button>
+        <button id="optionsBtn" class="light" data-i18n="settings"></button>
+      </div>
+      <p class="small" data-i18n="insertHint"></p>
+      <div id="status" class="status"></div>
+    </section>
+  </main>
+
+  <script type="module" src="dist/sidepanel.js"></script>
+</body>
+</html>

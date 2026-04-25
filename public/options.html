@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gmail Scheduling Sidekick Options</title>
+  <style>
+    body{margin:0;background:#f8fafc;color:#0f172a;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    header{background:#0f172a;color:#fff;padding:20px 24px}h1{margin:0;font-size:22px}
+    main{max-width:980px;margin:24px auto;padding:0 20px 40px}
+    section{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin-bottom:16px}
+    h2{font-size:18px;margin:0 0 12px}label{display:block;font-weight:700;margin:10px 0 5px}
+    input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:9px;font:inherit;box-sizing:border-box}
+    input[type=checkbox]{width:auto;margin-right:6px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    button{border:0;border-radius:10px;background:#2563eb;color:#fff;font-weight:800;padding:10px 14px;cursor:pointer}
+    button.secondary{background:#475569}button.danger{background:#dc2626}.buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .status{display:none;margin-top:12px;border-radius:10px;padding:10px}.ok{display:block;background:#ecfdf5;color:#065f46}.err{display:block;background:#fef2f2;color:#991b1b}
+    .log{width:100%;min-height:220px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;white-space:pre}
+    .small{color:#64748b;font-size:12px;line-height:1.5}
+  </style>
+</head>
+<body>
+  <header><h1 data-i18n="optionsTitle">Gmail Scheduling Sidekick Options</h1></header>
+  <main>
+    <section>
+      <h2 data-i18n="basic"></h2>
+      <label for="language" data-i18n="language"></label>
+      <select id="language">
+        <option value="auto" data-i18n="languageAuto"></option>
+        <option value="ja" data-i18n="languageJa"></option>
+        <option value="en" data-i18n="languageEn"></option>
+      </select>
+
+      <label><input type="checkbox" id="enabled"> <span data-i18n="enable"></span></label>
+      <label><input type="checkbox" id="autoOpenSidePanelOnGmail"> <span data-i18n="autoOpen"></span></label>
+      <label><input type="checkbox" id="skipWeekends"> <span data-i18n="skipWeekends"></span></label>
+      <label><input type="checkbox" id="includeOnlineMeetingLine"> <span data-i18n="includeOnlineMeetingLine"></span></label>
+    </section>
+
+    <section>
+      <h2 data-i18n="textSettings"></h2>
+      <div class="grid">
+        <div>
+          <label for="onlineMeetingTextJa">オンライン会議案内文（日本語）</label>
+          <input id="onlineMeetingTextJa" type="text">
+        </div>
+        <div>
+          <label for="onlineMeetingTextEn">Online meeting line (English)</label>
+          <input id="onlineMeetingTextEn" type="text">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 data-i18n="defaults"></h2>
+      <div class="grid">
+        <div>
+          <label for="defaultDurationMinutes" data-i18n="duration"></label>
+          <select id="defaultDurationMinutes">
+            <option value="30">30</option>
+            <option value="45">45</option>
+            <option value="60">60</option>
+            <option value="90">90</option>
+          </select>
+        </div>
+        <div>
+          <label for="candidateCount" data-i18n="candidateCount"></label>
+          <select id="candidateCount">
+            <option value="3">3</option>
+            <option value="5">5</option>
+            <option value="7">7</option>
+          </select>
+        </div>
+        <div>
+          <label for="defaultTone" data-i18n="tone"></label>
+          <select id="defaultTone">
+            <option value="polite" data-i18n="polite"></option>
+            <option value="casual" data-i18n="casual"></option>
+            <option value="formal" data-i18n="formal"></option>
+          </select>
+        </div>
+        <div>
+          <label for="calendarUrl">Google Calendar URL</label>
+          <input id="calendarUrl" type="url">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 data-i18n="calendarHold"></h2>
+      <div class="grid">
+        <div>
+          <label for="defaultHoldTitleJa">標準タイトル（日本語）</label>
+          <input id="defaultHoldTitleJa" type="text">
+        </div>
+        <div>
+          <label for="defaultHoldTitleEn">Default title (English)</label>
+          <input id="defaultHoldTitleEn" type="text">
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <label for="defaultHoldDetailsJa">標準説明（日本語）</label>
+          <textarea id="defaultHoldDetailsJa"></textarea>
+        </div>
+        <div>
+          <label for="defaultHoldDetailsEn">Default details (English)</label>
+          <textarea id="defaultHoldDetailsEn"></textarea>
+        </div>
+      </div>
+      <label><input type="checkbox" id="defaultHoldBusy"> <span data-i18n="holdBusy"></span></label>
+    </section>
+
+    <section>
+      <div class="buttons">
+        <button id="saveBtn" data-i18n="save"></button>
+        <button id="resetBtn" class="secondary" data-i18n="reset"></button>
+      </div>
+      <div id="status" class="status"></div>
+    </section>
+
+    <section>
+      <h2 data-i18n="diagnostics"></h2>
+      <div class="buttons">
+        <button id="refreshLogsBtn" class="secondary" data-i18n="refresh"></button>
+        <button id="copyLogsBtn" class="secondary" data-i18n="copy"></button>
+        <button id="clearLogsBtn" class="danger" data-i18n="clear"></button>
+      </div>
+      <textarea id="logs" class="log" readonly></textarea>
+    </section>
+  </main>
+
+  <script type="module" src="dist/options.js"></script>
+</body>
+</html>

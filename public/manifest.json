@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Gmail Scheduling Sidekick",
+  "version": "0.6.0",
+  "description": "A Gmail side panel assistant for scheduling: flexible candidate times, reply templates, notes, and Google Calendar draft holds.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "sidePanel",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://mail.google.com/*",
+    "https://calendar.google.com/*"
+  ],
+  "background": {
+    "service_worker": "dist/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://mail.google.com/*"
+      ],
+      "js": [
+        "dist/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "options_page": "options.html",
+  "action": {
+    "default_title": "Gmail Scheduling Sidekick"
+  }
+}

@@ -1,0 +1,59 @@
+export type LanguageSetting = "auto" | "ja" | "en";
+export type ResolvedLanguage = "ja" | "en";
+export type Tone = "polite" | "casual" | "formal";
+export type CandidateMode = "distributed" | "continuous" | "manual";
+export type TimeBand = "all" | "morning" | "afternoon" | "custom";
+export type SlotPattern = "balanced" | "early" | "late";
+
+export type Settings = {
+  enabled: boolean;
+  autoOpenSidePanelOnGmail: boolean;
+  language: LanguageSetting;
+  calendarUrl: string;
+  defaultDurationMinutes: number;
+  candidateCount: number;
+  skipWeekends: boolean;
+  defaultTone: Tone;
+  includeOnlineMeetingLine: boolean;
+  onlineMeetingTextJa: string;
+  onlineMeetingTextEn: string;
+  defaultHoldTitleJa: string;
+  defaultHoldTitleEn: string;
+  defaultHoldDetailsJa: string;
+  defaultHoldDetailsEn: string;
+  defaultHoldBusy: boolean;
+};
+
+export type Candidate = {
+  id: string;
+  startIso: string;
+  endIso: string;
+};
+
+export type LogEntry = {
+  time: string;
+  level: "DEBUG" | "INFO" | "WARN" | "ERROR";
+  scope: string;
+  message: string;
+};
+
+export type GmailContext = {
+  url: string;
+  title: string;
+  composeOpen: boolean;
+  subject: string;
+  timestamp: string;
+};
+
+export type RuntimeMessage =
+  | { type: "GET_VERSION" }
+  | { type: "GET_SETTINGS" }
+  | { type: "SAVE_SETTINGS"; settings: Partial<Settings> }
+  | { type: "GET_LOGS" }
+  | { type: "CLEAR_LOGS" }
+  | { type: "OPEN_CALENDAR" }
+  | { type: "OPEN_URLS"; urls: string[] }
+  | { type: "INSERT_TEXT_TO_GMAIL"; text: string }
+  | { type: "GET_GMAIL_CONTEXT" }
+  | { type: "GSS_INSERT_TEXT"; text: string }
+  | { type: "GSS_GET_CONTEXT" };
