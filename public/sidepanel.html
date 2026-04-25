@@ -19,6 +19,7 @@
     .small{color:var(--muted);font-size:12px;line-height:1.5}.candidate{border:1px solid var(--line);border-radius:10px;padding:8px;margin:7px 0;background:#fff}
     .candidateTop{display:block}.candidateTitle{font-weight:800;margin-bottom:7px}.candidateActions{display:flex;gap:5px;flex-wrap:wrap}.candidateActions button{font-size:12px;padding:5px 7px}
     .memoSaved{color:#047857;font-size:12px;display:none}.templateList{display:grid;grid-template-columns:1fr 1fr;gap:7px}.explain{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:8px;margin:8px 0;color:#1e3a8a;font-size:12px;line-height:1.55}
+    .risk{background:#fff7ed;border-color:#fed7aa;color:#9a3412}.okbox{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}.statusBadge{display:inline-block;border-radius:999px;padding:4px 9px;background:#dbeafe;color:#1e40af;font-weight:800}
   </style>
 </head>
 <body>
@@ -29,6 +30,16 @@
   </header>
 
   <main>
+    <section>
+      <h2 data-i18n="threadStatusTitle">Thread status</h2>
+      <div id="threadStatusBox" class="explain">Checking...</div>
+      <div id="threadRiskBox" class="explain risk" style="display:none"></div>
+      <div class="buttons">
+        <button id="analyzeThreadBtn" data-i18n="analyzeThread">Analyze thread</button>
+        <button id="saveThreadStatusBtn" class="secondary" data-i18n="saveThreadStatus">Save status</button>
+      </div>
+    </section>
+
     <section>
       <h2 data-i18n="step1"></h2>
 

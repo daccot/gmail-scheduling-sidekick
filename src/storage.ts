@@ -1,4 +1,4 @@
-import type { Settings, LogEntry } from "./types";
+import type { Settings, LogEntry, ThreadStatusRecord } from "./types";
 
 export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
@@ -23,6 +23,20 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 const THREAD_MEMO_KEY = "threadMemos";
+const THREAD_STATUS_KEY = "threadStatusRecords";
+
+export async function getThreadStatus(threadId: string): Promise<ThreadStatusRecord | null> {
+  const data = await chrome.storage.local.get([THREAD_STATUS_KEY]);
+  const map = data[THREAD_STATUS_KEY] || {};
+  return map[threadId] || null;
+}
+
+export async function saveThreadStatus(record: ThreadStatusRecord): Promise<void> {
+  const data = await chrome.storage.local.get([THREAD_STATUS_KEY]);
+  const map = data[THREAD_STATUS_KEY] || {};
+  map[record.threadId] = record;
+  await chrome.storage.local.set({ [THREAD_STATUS_KEY]: map });
+}
 
 export async function getSettings(): Promise<Settings> {
   const data = await chrome.storage.sync.get(["settings"]);
@@ -83,7 +97,5 @@ export async function addLog(entry: Omit<LogEntry, "time">): Promise<void> {
     const logs = await getLogs();
     logs.unshift(full);
     await chrome.storage.local.set({ diagnosticLogs: logs.slice(0, 500) });
-  } catch {
-    // Do not fail product flow because diagnostics failed.
-  }
+  } catch {}
 }
