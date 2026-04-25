@@ -4,6 +4,7 @@ export type Tone = "polite" | "casual" | "formal";
 export type CandidateMode = "distributed" | "continuous" | "manual";
 export type TimeBand = "all" | "morning" | "afternoon" | "custom";
 export type SlotPattern = "balanced" | "early" | "late";
+export type SchedulingStatus = "unknown" | "drafting" | "waiting_their_reply" | "waiting_my_reply" | "confirmed" | "calendar_ready" | "needs_review";
 
 export type Settings = {
   enabled: boolean;
@@ -41,6 +42,17 @@ export type DetectedTime = {
   confidence: "medium" | "low";
 };
 
+export type ThreadStatusRecord = {
+  threadId: string;
+  status: SchedulingStatus;
+  statusLabel: string;
+  nextAction: string;
+  risks: string[];
+  detectedAt: string;
+  updatedAt: string;
+  source: "auto" | "manual";
+};
+
 export type LogEntry = {
   time: string;
   level: "DEBUG" | "INFO" | "WARN" | "ERROR";
@@ -70,5 +82,7 @@ export type RuntimeMessage =
   | { type: "GET_GMAIL_CONTEXT" }
   | { type: "GET_THREAD_MEMO"; threadId: string }
   | { type: "SAVE_THREAD_MEMO"; threadId: string; memo: string }
+  | { type: "GET_THREAD_STATUS"; threadId: string }
+  | { type: "SAVE_THREAD_STATUS"; record: ThreadStatusRecord }
   | { type: "GSS_INSERT_TEXT"; text: string }
   | { type: "GSS_GET_CONTEXT" };
