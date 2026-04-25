@@ -33,6 +33,7 @@ function populateSettings(settings: Settings): void {
   setCheckbox("autoOpenSidePanelOnGmail", settings.autoOpenSidePanelOnGmail);
   setCheckbox("skipWeekends", settings.skipWeekends);
   setCheckbox("includeOnlineMeetingLine", settings.includeOnlineMeetingLine);
+  setCheckbox("includeThreadMemoInTemplate", settings.includeThreadMemoInTemplate);
   setCheckbox("defaultHoldBusy", settings.defaultHoldBusy);
 
   setValue("language", settings.language);
@@ -46,6 +47,8 @@ function populateSettings(settings: Settings): void {
   setValue("defaultHoldTitleEn", settings.defaultHoldTitleEn);
   setValue("defaultHoldDetailsJa", settings.defaultHoldDetailsJa);
   setValue("defaultHoldDetailsEn", settings.defaultHoldDetailsEn);
+  setValue("confirmedEventTitleJa", settings.confirmedEventTitleJa);
+  setValue("confirmedEventTitleEn", settings.confirmedEventTitleEn);
 }
 
 function collectSettings(): Settings {
@@ -55,6 +58,7 @@ function collectSettings(): Settings {
     autoOpenSidePanelOnGmail: getCheckbox("autoOpenSidePanelOnGmail"),
     skipWeekends: getCheckbox("skipWeekends"),
     includeOnlineMeetingLine: getCheckbox("includeOnlineMeetingLine"),
+    includeThreadMemoInTemplate: getCheckbox("includeThreadMemoInTemplate"),
     defaultHoldBusy: getCheckbox("defaultHoldBusy"),
     language: getValue("language") as Settings["language"],
     calendarUrl: getValue("calendarUrl"),
@@ -66,7 +70,9 @@ function collectSettings(): Settings {
     defaultHoldTitleJa: getValue("defaultHoldTitleJa"),
     defaultHoldTitleEn: getValue("defaultHoldTitleEn"),
     defaultHoldDetailsJa: getValue("defaultHoldDetailsJa"),
-    defaultHoldDetailsEn: getValue("defaultHoldDetailsEn")
+    defaultHoldDetailsEn: getValue("defaultHoldDetailsEn"),
+    confirmedEventTitleJa: getValue("confirmedEventTitleJa"),
+    confirmedEventTitleEn: getValue("confirmedEventTitleEn")
   };
 }
 

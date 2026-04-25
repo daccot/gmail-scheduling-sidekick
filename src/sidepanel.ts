@@ -1,17 +1,21 @@
 import { applyStaticI18n, resolveLanguage, tr } from "./i18n";
 import { getMemo, getSettings, saveMemo } from "./storage";
-import type { Candidate, CandidateMode, Settings, SlotPattern, TimeBand, Tone, ResolvedLanguage } from "./types";
+import type { Candidate, CandidateMode, Settings, SlotPattern, TimeBand, Tone, ResolvedLanguage, GmailContext, DetectedTime } from "./types";
 
 const state: {
   settings: Settings | null;
   language: ResolvedLanguage;
   candidates: Candidate[];
   templateText: string;
+  currentThreadId: string | null;
+  detectedTimes: DetectedTime[];
 } = {
   settings: null,
   language: "en",
   candidates: [],
-  templateText: ""
+  templateText: "",
+  currentThreadId: null,
+  detectedTimes: []
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -21,7 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   bindEvents();
   setDefaults();
-  await loadMemoToUi();
+  await initThreadMemo();
   await setVersion();
   renderCandidates();
 });
@@ -49,6 +53,7 @@ function bindEvents(): void {
   byId("clearMemoBtn").addEventListener("click", clearMemo);
   byId("openCalendarBtn").addEventListener("click", openCalendar);
   byId("getContextBtn").addEventListener("click", getGmailContext);
+  byId("detectConfirmedTimeBtn").addEventListener("click", detectConfirmedTimes);
   byId("optionsBtn").addEventListener("click", () => chrome.runtime.openOptionsPage());
 }
 
@@ -231,6 +236,11 @@ function generateTemplate(type: string): void {
     ? "\n" + (state.language === "ja" ? settings.onlineMeetingTextJa : settings.onlineMeetingTextEn)
     : "";
 
+  const memo = getTextareaValue("memo").trim();
+  const memoBlock = settings.includeThreadMemoInTemplate && memo
+    ? `\n\n${tr(state.language, "contextNoteHeader")}:\n${memo}`
+    : "";
+
   const message = {
     interview: tr(state.language, "msgInterview"),
     meeting: tr(state.language, "msgMeeting"),
@@ -238,7 +248,7 @@ function generateTemplate(type: string): void {
     thanks: tr(state.language, "msgThanks")
   }[type] || tr(state.language, "msgMeeting");
 
-  state.templateText = `${prefix}\n\n${message}\n\n${formatCandidates()}${online}\n\n${close}`;
+  state.templateText = `${prefix}\n\n${message}\n\n${formatCandidates()}${online}${memoBlock}\n\n${close}`;
   byId("templateResult").textContent = state.templateText;
 }
 
@@ -303,21 +313,201 @@ async function copyText(text: string): Promise<void> {
 }
 
 async function saveMemoFromUi(): Promise<void> {
-  await saveMemo(getTextareaValue("memo"));
+  const memo = getTextareaValue("memo");
+
+  if (state.currentThreadId) {
+    await sendMessage({ type: "SAVE_THREAD_MEMO", threadId: state.currentThreadId, memo });
+  } else {
+    await saveMemo(memo);
+  }
+
   const saved = byId("memoSaved");
   saved.style.display = "block";
   setTimeout(() => { saved.style.display = "none"; }, 1500);
 }
 
-async function loadMemoToUi(): Promise<void> {
-  setTextareaValue("memo", await getMemo());
+async function initThreadMemo(): Promise<void> {
+  const contextResponse = await sendMessage({ type: "GET_GMAIL_CONTEXT" });
+  const context: GmailContext | undefined = contextResponse?.result?.result || contextResponse?.result;
+
+  state.currentThreadId = context?.threadId || null;
+  renderThreadInfo();
+
+  if (state.currentThreadId) {
+    const memoResponse = await sendMessage({ type: "GET_THREAD_MEMO", threadId: state.currentThreadId });
+    setTextareaValue("memo", memoResponse.ok ? memoResponse.memo || "" : "");
+  } else {
+    setTextareaValue("memo", await getMemo());
+  }
+}
+
+function renderThreadInfo(): void {
+  const el = byId("threadInfo");
+  if (state.currentThreadId) {
+    el.textContent = `${tr(state.language, "threadMemoActive")}: ${state.currentThreadId}`;
+  } else {
+    el.textContent = tr(state.language, "threadMemoInactive");
+  }
 }
 
 async function clearMemo(): Promise<void> {
   setTextareaValue("memo", "");
-  await saveMemo("");
+
+  if (state.currentThreadId) {
+    await sendMessage({ type: "SAVE_THREAD_MEMO", threadId: state.currentThreadId, memo: "" });
+  } else {
+    await saveMemo("");
+  }
+
   showStatus(tr(state.language, "saved"), false);
 }
+
+
+async function detectConfirmedTimes(): Promise<void> {
+  const response = await sendMessage({ type: "GET_GMAIL_CONTEXT" });
+  const context: GmailContext | undefined = response?.result?.result || response?.result;
+
+  if (!context?.visibleText) {
+    state.detectedTimes = [];
+    renderDetectedTimes();
+    return;
+  }
+
+  state.detectedTimes = detectTimesFromText(context.visibleText);
+  renderDetectedTimes();
+}
+
+function detectTimesFromText(text: string): DetectedTime[] {
+  const results: DetectedTime[] = [];
+  const now = new Date();
+  const year = now.getFullYear();
+  const duration = Number(getSelectValue("duration")) || 30;
+
+  const normalized = text
+    .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+    .replace(/午後/g, "PM")
+    .replace(/午前/g, "AM");
+
+  const patterns = [
+    /(\d{1,2})[\/月](\d{1,2})(?:日)?(?:[（(][日月火水木金土A-Za-z]{1,3}[）)])?.{0,20}?(AM|PM)?\s*(\d{1,2})(?::|時)?(\d{2})?/g,
+    /(\d{4})[\/-](\d{1,2})[\/-](\d{1,2}).{0,20}?(AM|PM)?\s*(\d{1,2})(?::|時)?(\d{2})?/g
+  ];
+
+  for (const pattern of patterns) {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(normalized)) !== null && results.length < 10) {
+      let y = year;
+      let month: number;
+      let day: number;
+      let ampm: string | undefined;
+      let hour: number;
+      let minute: number;
+
+      if (match.length === 6) {
+        month = Number(match[1]);
+        day = Number(match[2]);
+        ampm = match[3];
+        hour = Number(match[4]);
+        minute = Number(match[5] || "0");
+      } else {
+        y = Number(match[1]);
+        month = Number(match[2]);
+        day = Number(match[3]);
+        ampm = match[4];
+        hour = Number(match[5]);
+        minute = Number(match[6] || "0");
+      }
+
+      if (ampm === "PM" && hour < 12) hour += 12;
+      if (ampm === "AM" && hour === 12) hour = 0;
+
+      if (!isValidDateParts(y, month, day, hour, minute)) continue;
+
+      const start = new Date(y, month - 1, day, hour, minute, 0, 0);
+      const end = new Date(start.getTime() + duration * 60_000);
+
+      if (start.getTime() < now.getTime() - 86400000) continue;
+
+      const raw = match[0].trim();
+      if (results.some((r) => Math.abs(new Date(r.startIso).getTime() - start.getTime()) < 60_000)) continue;
+
+      results.push({
+        id: crypto.randomUUID(),
+        text: raw.slice(0, 80),
+        startIso: start.toISOString(),
+        endIso: end.toISOString(),
+        confidence: raw.includes("でお願いします") || raw.includes("確定") || raw.toLowerCase().includes("works") ? "medium" : "low"
+      });
+    }
+  }
+
+  return results;
+}
+
+function isValidDateParts(year: number, month: number, day: number, hour: number, minute: number): boolean {
+  if (year < 2000 || year > 2100) return false;
+  if (month < 1 || month > 12) return false;
+  if (day < 1 || day > 31) return false;
+  if (hour < 0 || hour > 23) return false;
+  if (minute < 0 || minute > 59) return false;
+  return true;
+}
+
+function renderDetectedTimes(): void {
+  const container = byId("detectedTimeList");
+
+  if (state.detectedTimes.length === 0) {
+    container.innerHTML = `<div class="result">${escapeHtml(tr(state.language, "noDetectedTimes"))}</div>`;
+    return;
+  }
+
+  container.innerHTML = state.detectedTimes.map((item, index) => `
+    <div class="candidate">
+      <div class="candidateTop">
+        <div class="candidateTitle">${index + 1}. ${escapeHtml(formatDetectedTime(item))}</div>
+        <div class="small">${escapeHtml(item.text)} / ${escapeHtml(item.confidence)}</div>
+        <div class="candidateActions">
+          <button class="light" data-action="copy-detected" data-id="${item.id}">${escapeHtml(tr(state.language, "copy"))}</button>
+          <button class="light" data-action="calendar-detected" data-id="${item.id}">${escapeHtml(tr(state.language, "createConfirmedEvent"))}</button>
+        </div>
+      </div>
+    </div>
+  `).join("");
+
+  container.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
+    button.addEventListener("click", () => {
+      const item = state.detectedTimes.find((x) => x.id === button.dataset.id);
+      if (!item) return;
+
+      if (button.dataset.action === "copy-detected") copyText(formatDetectedTime(item));
+      if (button.dataset.action === "calendar-detected") openUrls([buildConfirmedEventUrl(item)]).then(() => showStatus(tr(state.language, "holdOpened"), false));
+    });
+  });
+}
+
+function formatDetectedTime(item: DetectedTime): string {
+  const start = new Date(item.startIso);
+  const end = new Date(item.endIso);
+  return `${formatDate(start)} ${formatTime(start)}〜${formatTime(end)}`;
+}
+
+function buildConfirmedEventUrl(item: DetectedTime): string {
+  const settings = requireSettings();
+  const title = state.language === "ja" ? settings.confirmedEventTitleJa : settings.confirmedEventTitleEn;
+  const details = `Detected from Gmail text: ${item.text}`;
+  const dates = `${toCalendarUtc(new Date(item.startIso))}/${toCalendarUtc(new Date(item.endIso))}`;
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates,
+    details,
+    ctz: Intl.DateTimeFormat().resolvedOptions().timeZone
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 
 async function openCalendar(): Promise<void> {
   const response = await sendMessage({ type: "OPEN_CALENDAR" });

@@ -22,12 +22,23 @@ export type Settings = {
   defaultHoldDetailsJa: string;
   defaultHoldDetailsEn: string;
   defaultHoldBusy: boolean;
+  includeThreadMemoInTemplate: boolean;
+  confirmedEventTitleJa: string;
+  confirmedEventTitleEn: string;
 };
 
 export type Candidate = {
   id: string;
   startIso: string;
   endIso: string;
+};
+
+export type DetectedTime = {
+  id: string;
+  text: string;
+  startIso: string;
+  endIso: string;
+  confidence: "medium" | "low";
 };
 
 export type LogEntry = {
@@ -42,6 +53,8 @@ export type GmailContext = {
   title: string;
   composeOpen: boolean;
   subject: string;
+  threadId: string | null;
+  visibleText: string;
   timestamp: string;
 };
 
@@ -55,5 +68,7 @@ export type RuntimeMessage =
   | { type: "OPEN_URLS"; urls: string[] }
   | { type: "INSERT_TEXT_TO_GMAIL"; text: string }
   | { type: "GET_GMAIL_CONTEXT" }
+  | { type: "GET_THREAD_MEMO"; threadId: string }
+  | { type: "SAVE_THREAD_MEMO"; threadId: string; memo: string }
   | { type: "GSS_INSERT_TEXT"; text: string }
   | { type: "GSS_GET_CONTEXT" };

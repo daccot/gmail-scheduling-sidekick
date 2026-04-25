@@ -1,6 +1,6 @@
 {
   "name": "gmail-scheduling-sidekick",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "description": "A Gmail side panel assistant for scheduling candidates, reply templates, local memos, and Google Calendar draft holds.",
   "scripts": {

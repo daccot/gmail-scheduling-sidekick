@@ -1,7 +1,7 @@
-import { addLog, clearLogs, getLogs, getSettings, saveSettings } from "./storage";
+import { addLog, clearLogs, getLogs, getSettings, saveSettings, getThreadMemo, saveThreadMemo } from "./storage";
 import type { RuntimeMessage } from "./types";
 
-const VERSION = "0.6.0";
+const VERSION = "0.7.0";
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   await getSettings();
@@ -25,18 +25,10 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     const settings = await getSettings();
     if (!settings.enabled) return;
 
-    await chrome.sidePanel.setOptions({
-      tabId,
-      path: "sidepanel.html",
-      enabled: true
-    });
+    await chrome.sidePanel.setOptions({ tabId, path: "sidepanel.html", enabled: true });
 
     if (settings.autoOpenSidePanelOnGmail) {
-      try {
-        await chrome.sidePanel.open({ tabId });
-      } catch {
-        // Auto-open may fail depending on Chrome state. Action click still works.
-      }
+      try { await chrome.sidePanel.open({ tabId }); } catch {}
     }
   } catch (error) {
     await addLog({ level: "ERROR", scope: "tabs.onUpdated", message: stringifyError(error) });
@@ -50,52 +42,50 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, sender, sendRespo
         case "GET_VERSION":
           sendResponse({ ok: true, version: VERSION });
           return;
-
         case "GET_SETTINGS":
           sendResponse({ ok: true, settings: await getSettings(), version: VERSION });
           return;
-
         case "SAVE_SETTINGS":
           sendResponse({ ok: true, settings: await saveSettings(message.settings), version: VERSION });
           return;
-
         case "GET_LOGS":
           sendResponse({ ok: true, logs: await getLogs(), version: VERSION });
           return;
-
         case "CLEAR_LOGS":
           await clearLogs();
           await addLog({ level: "INFO", scope: "CLEAR_LOGS", message: "Diagnostic logs cleared." });
           sendResponse({ ok: true, logs: await getLogs(), version: VERSION });
           return;
-
         case "OPEN_CALENDAR": {
           const settings = await getSettings();
           const tab = await chrome.tabs.create({ url: settings.calendarUrl, active: true });
           sendResponse({ ok: true, tabId: tab.id, version: VERSION });
           return;
         }
-
         case "OPEN_URLS": {
-          for (const url of message.urls.slice(0, 10)) {
-            await chrome.tabs.create({ url, active: false });
-          }
+          for (const url of message.urls.slice(0, 10)) await chrome.tabs.create({ url, active: false });
           sendResponse({ ok: true, count: message.urls.length, version: VERSION });
           return;
         }
-
         case "INSERT_TEXT_TO_GMAIL": {
           const result = await insertTextToActiveGmail(message.text);
           sendResponse({ ok: true, result, version: VERSION });
           return;
         }
-
         case "GET_GMAIL_CONTEXT": {
           const result = await getActiveGmailContext();
           sendResponse({ ok: true, result, version: VERSION });
           return;
         }
-
+        case "GET_THREAD_MEMO": {
+          sendResponse({ ok: true, memo: await getThreadMemo(message.threadId), version: VERSION });
+          return;
+        }
+        case "SAVE_THREAD_MEMO": {
+          await saveThreadMemo(message.threadId, message.memo);
+          sendResponse({ ok: true, version: VERSION });
+          return;
+        }
         default:
           sendResponse({ ok: false, error: "Unknown message type.", version: VERSION });
       }
@@ -122,25 +112,16 @@ async function findActiveGmailTab(): Promise<chrome.tabs.Tab | null> {
 
 async function insertTextToActiveGmail(text: string) {
   if (!text.trim()) throw new Error("Insert text is empty.");
-
   const tab = await findActiveGmailTab();
   if (!tab?.id) throw new Error("No Gmail tab found.");
-
-  return await chrome.tabs.sendMessage(tab.id, {
-    type: "GSS_INSERT_TEXT",
-    text
-  });
+  return await chrome.tabs.sendMessage(tab.id, { type: "GSS_INSERT_TEXT", text });
 }
 
 async function getActiveGmailContext() {
   const tab = await findActiveGmailTab();
   if (!tab?.id) return { found: false, reason: "No Gmail tab found." };
-
-  try {
-    return await chrome.tabs.sendMessage(tab.id, { type: "GSS_GET_CONTEXT" });
-  } catch (error) {
-    return { found: true, ok: false, error: stringifyError(error) };
-  }
+  try { return await chrome.tabs.sendMessage(tab.id, { type: "GSS_GET_CONTEXT" }); }
+  catch (error) { return { found: true, ok: false, error: stringifyError(error) }; }
 }
 
 function stringifyError(error: unknown): string {
